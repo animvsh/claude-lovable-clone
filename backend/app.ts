@@ -7,6 +7,7 @@
 
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+// WebSocket handling moved to NodeRuntime
 import type { Runtime } from "./runtime/types.ts";
 import {
   type ConfigContext,
@@ -17,6 +18,13 @@ import { handleHistoriesRequest } from "./handlers/histories.ts";
 import { handleConversationRequest } from "./handlers/conversations.ts";
 import { handleChatRequest } from "./handlers/chat.ts";
 import { handleAbortRequest } from "./handlers/abort.ts";
+import { handleWebSocketUpgrade, initializeWebSocketService } from "./handlers/websocket.ts";
+import { 
+  handleSupabaseTablesRequest,
+  handleSupabaseQueryRequest,
+  handleSupabaseSchemaRequest,
+  handleSupabaseStatusRequest 
+} from "./handlers/supabase.ts";
 import { logger } from "./utils/logger.ts";
 import { readBinaryFile } from "./utils/fs.ts";
 
@@ -31,6 +39,9 @@ export function createApp(
   config: AppConfig,
 ): Hono<ConfigContext> {
   const app = new Hono<ConfigContext>();
+
+  // Initialize WebSocket services - handled in NodeRuntime
+  initializeWebSocketService(runtime);
 
   // Store AbortControllers for each request (shared with chat handler)
   const requestAbortControllers = new Map<string, AbortController>();
@@ -71,6 +82,14 @@ export function createApp(
   );
 
   app.post("/api/chat", (c) => handleChatRequest(c, requestAbortControllers));
+
+  // Supabase MCP integration endpoints
+  app.post("/api/supabase/tables", (c) => handleSupabaseTablesRequest(c));
+  app.post("/api/supabase/query", (c) => handleSupabaseQueryRequest(c));
+  app.post("/api/supabase/schema", (c) => handleSupabaseSchemaRequest(c));
+  app.post("/api/supabase/status", (c) => handleSupabaseStatusRequest(c));
+
+  // WebSocket endpoint handled in NodeRuntime at /ws path
 
   // Static file serving with SPA fallback
   // Serve static assets (CSS, JS, images, etc.)

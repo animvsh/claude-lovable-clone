@@ -434,27 +434,30 @@ export function ChatPage() {
   }, [isLoading, currentRequestId, handleAbort]);
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-300">
-      <div className="max-w-6xl mx-auto p-3 sm:p-6 h-screen flex flex-col">
-        {/* Header */}
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-purple-900/20 via-slate-900/40 to-slate-900"></div>
+      <div className="absolute top-0 left-0 w-full h-full bg-grid-pattern opacity-5"></div>
+      
+      <div className="relative z-10 max-w-6xl mx-auto p-3 sm:p-6 h-screen flex flex-col">
+        {/* Modern Header */}
         <div className="flex items-center justify-between mb-4 sm:mb-8 flex-shrink-0">
           <div className="flex items-center gap-4">
             {isHistoryView && (
               <button
                 onClick={handleBackToChat}
-                className="p-2 rounded-lg bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 transition-all duration-200 backdrop-blur-sm shadow-sm hover:shadow-md"
+                className="p-2 rounded-lg bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 transition-all duration-300 shadow-lg hover:shadow-xl"
                 aria-label="Back to chat"
               >
-                <ChevronLeftIcon className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+                <ChevronLeftIcon className="w-5 h-5 text-white/80 hover:text-white" />
               </button>
             )}
             {isLoadedConversation && (
               <button
                 onClick={handleBackToHistory}
-                className="p-2 rounded-lg bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 transition-all duration-200 backdrop-blur-sm shadow-sm hover:shadow-md"
+                className="p-2 rounded-lg bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 transition-all duration-300 shadow-lg hover:shadow-xl"
                 aria-label="Back to history"
               >
-                <ChevronLeftIcon className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+                <ChevronLeftIcon className="w-5 h-5 text-white/80 hover:text-white" />
               </button>
             )}
             <div>
@@ -462,7 +465,7 @@ export function ChatPage() {
                 <div className="flex items-center">
                   <button
                     onClick={handleBackToProjects}
-                    className="text-slate-800 dark:text-slate-100 text-lg sm:text-3xl font-bold tracking-tight hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900 rounded-md px-1 -mx-1"
+                    className="text-white text-lg sm:text-3xl font-bold tracking-tight hover:text-blue-300 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-transparent rounded-md px-1 -mx-1"
                     aria-label="Back to project selection"
                   >
                     Claude Code Web UI
@@ -470,14 +473,14 @@ export function ChatPage() {
                   {(isHistoryView || sessionId) && (
                     <>
                       <span
-                        className="text-slate-800 dark:text-slate-100 text-lg sm:text-3xl font-bold tracking-tight mx-3 select-none"
+                        className="text-white text-lg sm:text-3xl font-bold tracking-tight mx-3 select-none"
                         aria-hidden="true"
                       >
                         {" "}
                         ›{" "}
                       </span>
                       <h1
-                        className="text-slate-800 dark:text-slate-100 text-lg sm:text-3xl font-bold tracking-tight"
+                        className="text-white text-lg sm:text-3xl font-bold tracking-tight"
                         aria-current="page"
                       >
                         {isHistoryView
@@ -492,13 +495,13 @@ export function ChatPage() {
                 <div className="flex items-center text-sm font-mono mt-1">
                   <button
                     onClick={handleBackToProjectChat}
-                    className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900 rounded px-1 -mx-1 cursor-pointer"
+                    className="text-white/70 hover:text-blue-300 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-transparent rounded px-1 -mx-1 cursor-pointer"
                     aria-label={`Return to new chat in ${workingDirectory}`}
                   >
                     {workingDirectory}
                   </button>
                   {sessionId && (
-                    <span className="ml-2 text-xs text-slate-600 dark:text-slate-400">
+                    <span className="ml-2 text-xs text-white/60">
                       Session: {sessionId.substring(0, 8)}...
                     </span>
                   )}

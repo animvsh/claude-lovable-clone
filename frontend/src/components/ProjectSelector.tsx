@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FolderIcon } from "@heroicons/react/24/outline";
+import { FolderIcon, SparklesIcon, ChatBubbleLeftIcon } from "@heroicons/react/24/outline";
 import type { ProjectsResponse, ProjectInfo } from "../types";
 import { getProjectsUrl } from "../config/api";
 import { SettingsButton } from "./SettingsButton";
@@ -33,11 +33,16 @@ export function ProjectSelector() {
     }
   };
 
-  const handleProjectSelect = (projectPath: string) => {
+  const handleProjectSelect = (projectPath: string, useStudio = false) => {
     const normalizedPath = projectPath.startsWith("/")
       ? projectPath
       : `/${projectPath}`;
-    navigate(`/projects${normalizedPath}`);
+    
+    if (useStudio) {
+      navigate(`/studio${normalizedPath}`);
+    } else {
+      navigate(`/projects${normalizedPath}`);
+    }
   };
 
   const handleSettingsClick = () => {
@@ -84,16 +89,39 @@ export function ProjectSelector() {
                 Recent Projects
               </h2>
               {projects.map((project) => (
-                <button
+                <div
                   key={project.path}
-                  onClick={() => handleProjectSelect(project.path)}
-                  className="w-full flex items-center gap-3 p-4 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-lg transition-colors text-left"
+                  className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden hover:shadow-md transition-shadow"
                 >
-                  <FolderIcon className="h-5 w-5 text-slate-500 dark:text-slate-400 flex-shrink-0" />
-                  <span className="text-slate-800 dark:text-slate-200 font-mono text-sm">
-                    {project.path}
-                  </span>
-                </button>
+                  {/* Project info header */}
+                  <div className="p-4">
+                    <div className="flex items-center gap-3 mb-3">
+                      <FolderIcon className="h-5 w-5 text-slate-500 dark:text-slate-400 flex-shrink-0" />
+                      <span className="text-slate-800 dark:text-slate-200 font-mono text-sm flex-1">
+                        {project.path}
+                      </span>
+                    </div>
+
+                    {/* Action buttons */}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleProjectSelect(project.path, true)}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-md hover:from-blue-600 hover:to-purple-700 transition-all duration-200 font-medium text-sm"
+                      >
+                        <SparklesIcon className="h-4 w-4" />
+                        Open Dev Studio
+                      </button>
+                      
+                      <button
+                        onClick={() => handleProjectSelect(project.path, false)}
+                        className="flex items-center justify-center gap-2 px-4 py-3 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-md hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors font-medium text-sm"
+                      >
+                        <ChatBubbleLeftIcon className="h-4 w-4" />
+                        Chat Only
+                      </button>
+                    </div>
+                  </div>
+                </div>
               ))}
             </>
           )}

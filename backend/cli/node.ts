@@ -33,7 +33,7 @@ async function main(runtime: NodeRuntime) {
   // Node.js 20.11.0+ compatible with fallback for older versions
   const __dirname =
     import.meta.dirname ?? dirname(fileURLToPath(import.meta.url));
-  const staticPath = join(__dirname, "../static");
+  const staticPath = join(__dirname, "../../frontend/dist");
 
   // Create application
   const app = createApp(runtime, {
