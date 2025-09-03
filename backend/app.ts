@@ -27,6 +27,28 @@ import {
   deleteWorkspace, 
   getWorkspaceStatus 
 } from "./handlers/workspaces.ts";
+import {
+  initializeSync,
+  getSyncStatus,
+  commitAndSync,
+  syncWithRemote,
+  createBranch,
+  switchBranch,
+  stopSync,
+  getBranches
+} from "./handlers/sync.ts";
+import {
+  initiateGitHubAuth,
+  handleGitHubCallback,
+  initiateClaudeAuth,
+  handleClaudeCallback,
+  getAuthStatus,
+  logoutGitHub,
+  logoutClaude,
+  getGitHubRepositories,
+  executeClaudeCommand,
+  createAuthMiddleware
+} from "./handlers/oauth.ts";
 import { 
   handleSupabaseTablesRequest,
   handleSupabaseQueryRequest,
@@ -74,6 +96,9 @@ export function createApp(
     }),
   );
 
+  // Authentication middleware - extracts OAuth sessions from cookies
+  app.use("*", createAuthMiddleware());
+
   // API routes
   app.get("/api/projects", (c) => handleProjectsRequest(c));
 
@@ -108,6 +133,29 @@ export function createApp(
   app.post("/api/workspaces/:workspaceId/initialize-claude", (c) => initializeClaudeEnvironment(c));
   app.get("/api/workspaces/:workspaceId/status", (c) => getWorkspaceStatus(c));
   app.delete("/api/workspaces/:workspaceId", (c) => deleteWorkspace(c));
+
+  // GitHub sync endpoints
+  app.post("/api/sync/initialize", (c) => initializeSync(c));
+  app.get("/api/sync/:workspaceId/status", (c) => getSyncStatus(c));
+  app.post("/api/sync/commit", (c) => commitAndSync(c));
+  app.post("/api/sync/:workspaceId/pull", (c) => syncWithRemote(c));
+  app.post("/api/sync/branch/create", (c) => createBranch(c));
+  app.post("/api/sync/branch/switch", (c) => switchBranch(c));
+  app.get("/api/sync/:workspaceId/branches", (c) => getBranches(c));
+  app.delete("/api/sync/:workspaceId", (c) => stopSync(c));
+
+  // OAuth authentication endpoints
+  app.get("/auth/github", (c) => initiateGitHubAuth(c));
+  app.get("/auth/github/callback", (c) => handleGitHubCallback(c));
+  app.get("/auth/claude", (c) => initiateClaudeAuth(c));
+  app.get("/auth/claude/callback", (c) => handleClaudeCallback(c));
+  app.get("/api/auth/status", (c) => getAuthStatus(c));
+  app.post("/api/auth/github/logout", (c) => logoutGitHub(c));
+  app.post("/api/auth/claude/logout", (c) => logoutClaude(c));
+  
+  // OAuth-enabled endpoints
+  app.get("/api/github/repositories", (c) => getGitHubRepositories(c));
+  app.post("/api/claude/execute", (c) => executeClaudeCommand(c));
 
   // WebSocket endpoint handled in NodeRuntime at /ws path
 

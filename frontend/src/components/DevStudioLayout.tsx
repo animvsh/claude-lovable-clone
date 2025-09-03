@@ -3,13 +3,22 @@ import {
   ChatBubbleLeftRightIcon,
   EyeIcon,
   CogIcon,
+  ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 import { ChatPage } from "./ChatPage";
 import { FilesPreviewToggle } from "./FilesPreviewToggle";
+import { SyncIndicator } from "./SyncIndicator";
+import { SyncSettingsPanel } from "./SyncSettingsPanel";
 
 export interface DevStudioLayoutProps {
   workingDirectory: string;
   sessionId: string;
+}
+
+// Extract workspace ID from working directory path
+function extractWorkspaceId(workingDirectory: string): string {
+  const parts = workingDirectory.split('/');
+  return parts[parts.length - 1] || '';
 }
 
 type PanelType = "chat" | "files-preview";
@@ -29,6 +38,8 @@ const DEFAULT_PANELS: PanelConfig[] = [
 
 export function DevStudioLayout({ workingDirectory, sessionId }: DevStudioLayoutProps) {
   const [panels, setPanels] = useState<PanelConfig[]>(DEFAULT_PANELS);
+  const [showSyncSettings, setShowSyncSettings] = useState(false);
+  const workspaceId = extractWorkspaceId(workingDirectory);
 
   const togglePanel = useCallback((panelType: PanelType) => {
     setPanels(prev => prev.map(panel => 
@@ -113,18 +124,37 @@ export function DevStudioLayout({ workingDirectory, sessionId }: DevStudioLayout
         
         {/* Quick Actions */}
         <div className="flex items-center gap-1 bg-white/10 backdrop-blur-xl rounded-xl p-1 shadow-2xl border border-white/20">
+          <button 
+            onClick={() => setShowSyncSettings(!showSyncSettings)}
+            className={`p-2.5 rounded-lg transition-all duration-300 hover:scale-105 ${
+              showSyncSettings 
+                ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white"
+                : "text-white/70 hover:text-white hover:bg-white/10"
+            }`}
+            title="Sync Settings"
+          >
+            <ArrowPathIcon className="h-4 w-4" />
+          </button>
           <button className="p-2.5 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-all duration-300 hover:scale-105" title="Settings">
             <CogIcon className="h-4 w-4" />
           </button>
         </div>
       </div>
 
-      {/* Modern Project Info */}
-      <div className="absolute top-6 right-6 z-50 bg-white/10 backdrop-blur-xl rounded-xl px-4 py-2.5 shadow-2xl border border-white/20">
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
-          <div className="text-sm text-white font-mono font-medium truncate max-w-xs">
-            {workingDirectory.split('/').pop() || workingDirectory}
+      {/* Modern Project Info & Sync Status */}
+      <div className="absolute top-6 right-6 z-50 flex items-center gap-3">
+        <SyncIndicator 
+          workspaceId={workspaceId} 
+          compact={true} 
+          className="bg-white/10 backdrop-blur-xl shadow-2xl"
+        />
+        
+        <div className="bg-white/10 backdrop-blur-xl rounded-xl px-4 py-2.5 shadow-2xl border border-white/20">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+            <div className="text-sm text-white font-mono font-medium truncate max-w-xs">
+              {workingDirectory.split('/').pop() || workingDirectory}
+            </div>
           </div>
         </div>
       </div>
@@ -176,6 +206,28 @@ export function DevStudioLayout({ workingDirectory, sessionId }: DevStudioLayout
           })
         )}
       </div>
+
+      {/* Sync Settings Sidebar */}
+      {showSyncSettings && (
+        <div className="absolute right-6 top-20 z-50 w-96 max-h-[calc(100vh-8rem)] overflow-y-auto">
+          <SyncSettingsPanel
+            workspaceId={workspaceId}
+            onConfigChange={(config) => {
+              console.log('Sync config updated:', config);
+              // Here we could persist the config or update sync service
+            }}
+            className="shadow-2xl"
+          />
+        </div>
+      )}
+      
+      {/* Overlay to close sync settings */}
+      {showSyncSettings && (
+        <div 
+          className="absolute inset-0 z-40 bg-black/20 backdrop-blur-sm"
+          onClick={() => setShowSyncSettings(false)}
+        />
+      )}
     </div>
   );
 }

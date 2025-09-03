@@ -28,13 +28,13 @@ export interface GitHubContextType {
   isAuthenticated: boolean;
   user: GitHubUser | null;
   repositories: GitHubRepo[];
-  accessToken: string | null;
   loading: boolean;
   error: string | null;
   
-  // Authentication methods
-  login: (token: string) => Promise<void>;
-  logout: () => void;
+  // OAuth authentication methods
+  initiateOAuth: () => Promise<void>;
+  logout: () => Promise<void>;
+  checkAuthStatus: () => Promise<void>;
   
   // Repository methods
   fetchRepositories: () => Promise<void>;
@@ -60,83 +60,95 @@ export const GitHubProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<GitHubUser | null>(null);
   const [repositories, setRepositories] = useState<GitHubRepo[]>([]);
-  const [accessToken, setAccessToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load token from localStorage on mount
+  // Check auth status on mount
   useEffect(() => {
-    const token = localStorage.getItem('github_access_token');
-    if (token) {
-      login(token);
-    }
+    checkAuthStatus();
   }, []);
 
-  const login = async (token: string) => {
+  const initiateOAuth = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      // Validate token by fetching user info
-      const userResponse = await fetch('https://api.github.com/user', {
-        headers: {
-          'Authorization': `token ${token}`,
-          'Accept': 'application/vnd.github.v3+json',
-        },
-      });
-
-      if (!userResponse.ok) {
-        throw new Error('Invalid GitHub token');
+      // Initiate OAuth flow
+      const response = await fetch('/auth/github');
+      if (response.ok) {
+        const data = await response.json();
+        // Redirect to GitHub OAuth
+        window.location.href = data.authUrl;
+      } else {
+        throw new Error('Failed to initiate GitHub authentication');
       }
-
-      const userData = await userResponse.json();
-      
-      // Store token and user data
-      localStorage.setItem('github_access_token', token);
-      setAccessToken(token);
-      setUser(userData);
-      setIsAuthenticated(true);
-
-      // Fetch repositories
-      await fetchRepositories(token);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to authenticate');
-      setIsAuthenticated(false);
-      setUser(null);
-      setAccessToken(null);
+      setError(err instanceof Error ? err.message : 'Failed to start authentication');
     } finally {
       setLoading(false);
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('github_access_token');
-    setAccessToken(null);
-    setUser(null);
-    setIsAuthenticated(false);
-    setRepositories([]);
-    setError(null);
+  const checkAuthStatus = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch('/api/auth/status');
+      if (response.ok) {
+        const data = await response.json();
+        
+        if (data.github.authenticated) {
+          setUser(data.github.user);
+          setIsAuthenticated(true);
+          // Fetch repositories
+          await fetchRepositories();
+        } else {
+          setIsAuthenticated(false);
+          setUser(null);
+        }
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to check authentication');
+      setIsAuthenticated(false);
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const fetchRepositories = async (token?: string) => {
-    const currentToken = token || accessToken;
-    if (!currentToken) return;
+  const logout = async () => {
+    try {
+      setLoading(true);
+      
+      // Call logout API
+      await fetch('/api/auth/github/logout', { method: 'POST' });
+      
+      // Clear local state
+      setUser(null);
+      setIsAuthenticated(false);
+      setRepositories([]);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to logout');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchRepositories = async () => {
+    if (!isAuthenticated) return;
 
     try {
       setLoading(true);
-      const response = await fetch('https://api.github.com/user/repos?sort=updated&per_page=100', {
-        headers: {
-          'Authorization': `token ${currentToken}`,
-          'Accept': 'application/vnd.github.v3+json',
-        },
-      });
+      const response = await fetch('/api/github/repositories');
 
       if (!response.ok) {
         throw new Error('Failed to fetch repositories');
       }
 
-      const repos = await response.json();
-      setRepositories(repos);
+      const data = await response.json();
+      setRepositories(data.repositories);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch repositories');
     } finally {
@@ -145,7 +157,7 @@ export const GitHubProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const createRepository = async (name: string, description?: string, isPrivate: boolean = false): Promise<GitHubRepo> => {
-    if (!accessToken) {
+    if (!isAuthenticated) {
       throw new Error('Not authenticated');
     }
 
@@ -154,7 +166,6 @@ export const GitHubProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       const response = await fetch('https://api.github.com/user/repos', {
         method: 'POST',
         headers: {
-          'Authorization': `token ${accessToken}`,
           'Accept': 'application/vnd.github.v3+json',
           'Content-Type': 'application/json',
         },
@@ -183,7 +194,7 @@ export const GitHubProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const syncProject = async (projectPath: string, repoName: string) => {
-    if (!accessToken) {
+    if (!isAuthenticated) {
       throw new Error('Not authenticated');
     }
 
@@ -199,7 +210,6 @@ export const GitHubProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         body: JSON.stringify({
           projectPath,
           repoName,
-          accessToken,
         }),
       });
 
@@ -221,7 +231,7 @@ export const GitHubProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const autoCommitAndPush = async (projectPath: string, message: string) => {
-    if (!accessToken) {
+    if (!isAuthenticated) {
       throw new Error('Not authenticated');
     }
 
@@ -234,7 +244,6 @@ export const GitHubProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         body: JSON.stringify({
           projectPath,
           message,
-          accessToken,
         }),
       });
 
@@ -260,11 +269,11 @@ export const GitHubProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     isAuthenticated,
     user,
     repositories,
-    accessToken,
     loading,
     error,
-    login,
+    initiateOAuth,
     logout,
+    checkAuthStatus,
     fetchRepositories,
     createRepository,
     syncProject,

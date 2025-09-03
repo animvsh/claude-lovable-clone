@@ -49,7 +49,7 @@ export async function cloneAndInitialize(c: Context) {
     const workspaceId = `${repositoryName}-${timestamp}`;
     const workspacePath = join(WORKSPACES_DIR, workspaceId);
 
-    logger.info("workspace", `Creating workspace for ${repositoryName} at ${workspacePath}`);
+    logger.app.info(`Creating workspace for ${repositoryName} at ${workspacePath}`);
 
     // Create workspace entry
     const workspace: Workspace = {
@@ -75,11 +75,70 @@ export async function cloneAndInitialize(c: Context) {
       const authenticatedUrl = `https://${accessToken}@${urlParts.join('/')}`;
 
       // Clone repository
-      logger.info("workspace", `Cloning repository ${repositoryUrl}`);
-      execSync(`git clone --branch ${branch} ${authenticatedUrl} .`, {
-        cwd: workspacePath,
-        stdio: 'pipe'
-      });
+      logger.app.info(`Cloning repository ${repositoryUrl}`);
+      try {
+        // Try to clone with specified branch
+        execSync(`git clone --branch ${branch} ${authenticatedUrl} .`, {
+          cwd: workspacePath,
+          stdio: 'pipe'
+        });
+      } catch (branchError) {
+        // If branch doesn't exist, try common default branches
+        const defaultBranches = ['main', 'master'];
+        let cloned = false;
+        
+        for (const defaultBranch of defaultBranches) {
+          if (defaultBranch === branch) continue; // Skip the one we already tried
+          
+          try {
+            // Clean up the directory first
+            if (existsSync(workspacePath)) {
+              rmSync(workspacePath, { recursive: true, force: true });
+              mkdirSync(workspacePath, { recursive: true });
+            }
+            
+            execSync(`git clone --branch ${defaultBranch} ${authenticatedUrl} .`, {
+              cwd: workspacePath,
+              stdio: 'pipe'
+            });
+            
+            // Update the branch in workspace
+            workspace.branch = defaultBranch;
+            cloned = true;
+            logger.app.info(`Successfully cloned with default branch: ${defaultBranch}`);
+            break;
+          } catch (err) {
+            continue; // Try next branch
+          }
+        }
+        
+        if (!cloned) {
+          // If no default branch works, try cloning without specifying branch
+          try {
+            if (existsSync(workspacePath)) {
+              rmSync(workspacePath, { recursive: true, force: true });
+              mkdirSync(workspacePath, { recursive: true });
+            }
+            
+            execSync(`git clone ${authenticatedUrl} .`, {
+              cwd: workspacePath,
+              stdio: 'pipe'
+            });
+            
+            // Get the actual default branch
+            const actualBranch = execSync('git branch --show-current', {
+              cwd: workspacePath,
+              encoding: 'utf8',
+              stdio: 'pipe'
+            }).trim();
+            
+            workspace.branch = actualBranch || 'main';
+            logger.app.info(`Successfully cloned, detected branch: ${workspace.branch}`);
+          } catch (finalError) {
+            throw branchError; // Throw the original error
+          }
+        }
+      }
 
       // Remove the token from git remote for security
       execSync(`git remote set-url origin ${repositoryUrl}`, {
@@ -104,7 +163,7 @@ export async function cloneAndInitialize(c: Context) {
       workspace.status = 'ready';
       activeWorkspaces.set(workspaceId, workspace);
 
-      logger.info("workspace", `Successfully initialized workspace ${workspaceId}`);
+      logger.app.info(`Successfully initialized workspace ${workspaceId}`);
 
       return c.json({
         success: true,
@@ -121,7 +180,7 @@ export async function cloneAndInitialize(c: Context) {
       workspace.status = 'error';
       activeWorkspaces.set(workspaceId, workspace);
       
-      logger.error("workspace", "Failed to clone repository:", cloneError);
+      logger.app.error("Failed to clone repository:", cloneError);
       return c.json({ 
         error: "Failed to clone repository", 
         details: cloneError instanceof Error ? cloneError.message : String(cloneError)
@@ -129,7 +188,7 @@ export async function cloneAndInitialize(c: Context) {
     }
 
   } catch (error) {
-    logger.error("workspace", "Clone and initialize request failed:", error);
+    logger.app.error("Clone and initialize request failed:", error);
     return c.json(
       { 
         error: "Failed to process request", 
@@ -158,7 +217,7 @@ export async function getWorkspaces(c: Context) {
 
     return c.json({ workspaces });
   } catch (error) {
-    logger.error("workspace", "Failed to get workspaces:", error);
+    logger.app.error("Failed to get workspaces:", error);
     return c.json({ error: "Failed to get workspaces" }, 500);
   }
 }
@@ -187,7 +246,7 @@ export async function initializeClaudeEnvironment(c: Context) {
     workspace.status = 'active';
     activeWorkspaces.set(workspaceId, workspace);
 
-    logger.info("workspace", `Initialized Claude environment for workspace ${workspaceId}`);
+    logger.app.info(`Initialized Claude environment for workspace ${workspaceId}`);
 
     return c.json({
       success: true,
@@ -196,7 +255,7 @@ export async function initializeClaudeEnvironment(c: Context) {
     });
 
   } catch (error) {
-    logger.error("workspace", "Failed to initialize Claude environment:", error);
+    logger.app.error("Failed to initialize Claude environment:", error);
     return c.json({ error: "Failed to initialize Claude environment" }, 500);
   }
 }
@@ -222,12 +281,12 @@ export async function deleteWorkspace(c: Context) {
     // Remove from active workspaces
     activeWorkspaces.delete(workspaceId);
 
-    logger.info("workspace", `Deleted workspace ${workspaceId}`);
+    logger.app.info(`Deleted workspace ${workspaceId}`);
 
     return c.json({ success: true, message: "Workspace deleted successfully" });
 
   } catch (error) {
-    logger.error("workspace", "Failed to delete workspace:", error);
+    logger.app.error("Failed to delete workspace:", error);
     return c.json({ error: "Failed to delete workspace" }, 500);
   }
 }
@@ -265,7 +324,7 @@ export async function getWorkspaceStatus(c: Context) {
     });
 
   } catch (error) {
-    logger.error("workspace", "Failed to get workspace status:", error);
+    logger.app.error("Failed to get workspace status:", error);
     return c.json({ error: "Failed to get workspace status" }, 500);
   }
 }

@@ -13,12 +13,12 @@ import {
 } from "@heroicons/react/24/outline";
 import { ConversationalEntry } from "./ConversationalEntry";
 import { GitHubRepositoryBrowser } from "./GitHubRepositoryBrowser";
+import { WorkspaceInitializer } from "./WorkspaceInitializer";
 import { DevStudioLayout } from "./DevStudioLayout";
 import { GitHubRepoManager } from "./GitHubRepoManager";
 import { useGitHub } from "../contexts/GitHubContext";
 import type { GitHubRepo } from "../contexts/GitHubContext";
 import type { ProjectInfo } from "../types";
-import { cloneAndInitializeRepository, initializeClaudeEnvironment } from "../utils/workspaceApi";
 
 interface NavigationItem {
   id: string;
@@ -33,7 +33,7 @@ export interface LovableLayoutProps {
   onProjectsRefresh: () => void;
 }
 
-type ViewMode = "home" | "dashboard" | "project" | "github";
+type ViewMode = "home" | "dashboard" | "project" | "github" | "initializing";
 
 export function LovableLayout({ projects, onProjectsRefresh }: LovableLayoutProps) {
   const navigate = useNavigate();
@@ -44,7 +44,7 @@ export function LovableLayout({ projects, onProjectsRefresh }: LovableLayoutProp
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [, setIsInitializingWorkspace] = useState(false);
+  const [initializingRepo, setInitializingRepo] = useState<GitHubRepo | null>(null);
 
   // Determine current view from URL
   useEffect(() => {
@@ -132,43 +132,27 @@ export function LovableLayout({ projects, onProjectsRefresh }: LovableLayoutProp
       return;
     }
 
-    try {
-      setIsInitializingWorkspace(true);
-      
-      // Clone and initialize workspace
-      const cloneResponse = await cloneAndInitializeRepository({
-        repositoryUrl: repo.clone_url,
-        repositoryName: repo.name,
-        branch: repo.default_branch,
-        accessToken: accessToken
-      });
+    // Show initializer screen
+    setInitializingRepo(repo);
+    setViewMode("initializing");
+  }, [accessToken, isAuthenticated]);
 
-      if (!cloneResponse.success) {
-        throw new Error(cloneResponse.error || 'Failed to clone repository');
-      }
+  const handleWorkspaceComplete = useCallback((workspacePath: string, sessionId: string) => {
+    setCurrentProject(workspacePath);
+    setSessionId(sessionId);
+    setViewMode("project");
+    setInitializingRepo(null);
+    
+    const encodedPath = encodeURIComponent(workspacePath);
+    navigate(`/projects${encodedPath}?sessionId=${sessionId}`);
+  }, [navigate]);
 
-      // Initialize Claude environment
-      const claudeResponse = await initializeClaudeEnvironment(cloneResponse.workspace.id);
-
-      if (!claudeResponse.success) {
-        throw new Error(claudeResponse.error || 'Failed to initialize Claude environment');
-      }
-
-      // Navigate to the development environment
-      setCurrentProject(cloneResponse.workspace.localPath);
-      setSessionId(claudeResponse.claudeSessionId);
-      setViewMode("project");
-      
-      const encodedPath = encodeURIComponent(cloneResponse.workspace.localPath);
-      navigate(`/projects${encodedPath}?sessionId=${claudeResponse.claudeSessionId}`);
-
-    } catch (error) {
-      console.error('Failed to initialize repository:', error);
-      // TODO: Show error toast/notification
-    } finally {
-      setIsInitializingWorkspace(false);
-    }
-  }, [accessToken, isAuthenticated, navigate]);
+  const handleWorkspaceError = useCallback((error: string) => {
+    console.error('Workspace initialization failed:', error);
+    setInitializingRepo(null);
+    setViewMode("dashboard");
+    // TODO: Show error toast/notification
+  }, []);
 
   const navigationItems: NavigationItem[] = [
     {
@@ -349,10 +333,10 @@ export function LovableLayout({ projects, onProjectsRefresh }: LovableLayoutProp
                     Connect your GitHub account to browse and develop your repositories
                   </p>
                   <button
-                    onClick={handleGoToGitHub}
+                    onClick={() => { window.location.href = '/auth/github'; }}
                     className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl hover:shadow-xl transition-all duration-300 hover:scale-105"
                   >
-                    Go to GitHub Settings
+                    Connect GitHub
                   </button>
                 </div>
               </div>
@@ -364,6 +348,15 @@ export function LovableLayout({ projects, onProjectsRefresh }: LovableLayoutProp
           <div className="h-full overflow-auto">
             <GitHubRepoManager projects={projects} />
           </div>
+        )}
+
+        {viewMode === "initializing" && initializingRepo && (
+          <WorkspaceInitializer
+            repositoryName={initializingRepo.name}
+            repositoryUrl={initializingRepo.html_url}
+            onComplete={handleWorkspaceComplete}
+            onError={handleWorkspaceError}
+          />
         )}
       </div>
 

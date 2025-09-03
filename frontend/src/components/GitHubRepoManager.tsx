@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useGitHub } from '../contexts/GitHubContext';
-import { GitHubAuth } from './GitHubAuth';
+import { OAuthLogin } from './OAuthLogin';
 import type { ProjectInfo } from '../types';
 import {
   FolderIcon,
@@ -90,7 +90,7 @@ export function GitHubRepoManager({ projects, onRefresh }: GitHubRepoManagerProp
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 p-8">
         <div className="max-w-md mx-auto mt-20">
-          <GitHubAuth />
+          <OAuthLogin />
         </div>
       </div>
     );
