@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useGitHub } from '../contexts/GitHubContext';
+import { GitHubAuth } from './GitHubAuth';
 import type { ProjectInfo } from '../types';
 import {
   FolderIcon,
@@ -87,20 +88,17 @@ export function GitHubRepoManager({ projects, onRefresh }: GitHubRepoManagerProp
 
   if (!isAuthenticated) {
     return (
-      <div className="text-center py-8">
-        <div className="text-white/60 mb-4">
-          <LinkIcon className="w-16 h-16 mx-auto" />
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 p-8">
+        <div className="max-w-md mx-auto mt-20">
+          <GitHubAuth />
         </div>
-        <h3 className="text-white text-lg font-semibold mb-2">Connect to GitHub</h3>
-        <p className="text-white/70 text-sm">
-          Connect your GitHub account to manage repository syncing
-        </p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 p-8">
+      <div className="max-w-6xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -321,6 +319,7 @@ export function GitHubRepoManager({ projects, onRefresh }: GitHubRepoManagerProp
           <p className="text-white/60">No projects found</p>
         </div>
       )}
+      </div>
     </div>
   );
 }

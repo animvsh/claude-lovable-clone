@@ -36,7 +36,7 @@ fi
 
 # Test 4: Static file serving
 echo "4️⃣ Testing static file serving..."
-STATIC_RESPONSE=$(curl -s -w "%{http_code}" http://localhost:8080/assets/index-DFX_Jiql.js -o /dev/null)
+STATIC_RESPONSE=$(curl -s -w "%{http_code}" http://localhost:8080/assets/index-CbJ7ZzN1.js -o /dev/null)
 if [ "$STATIC_RESPONSE" = "200" ]; then
     echo "✅ Static files serving properly"
 else
