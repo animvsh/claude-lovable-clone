@@ -70,6 +70,11 @@ export function ProjectDashboard({
 
   // Convert projects to projects with metadata
   useEffect(() => {
+    if (!Array.isArray(projects)) {
+      setProjectsWithMetadata([]);
+      return;
+    }
+    
     const enrichedProjects: ProjectWithMetadata[] = projects.map((project, index) => {
       // Derive display name from path
       const displayName = project.path.split('/').pop() || project.encodedName;

@@ -154,7 +154,10 @@ export function DevStudioLayout({ workingDirectory, sessionId }: DevStudioLayout
               >
                 {panel.type === "chat" && (
                   <div className="h-full bg-gradient-to-b from-white/5 to-transparent rounded-2xl">
-                    <ChatPage />
+                    <ChatPage 
+                      workingDirectory={workingDirectory} 
+                      sessionId={sessionId} 
+                    />
                   </div>
                 )}
                 

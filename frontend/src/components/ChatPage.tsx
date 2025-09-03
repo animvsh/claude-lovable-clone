@@ -24,15 +24,20 @@ import { KEYBOARD_SHORTCUTS } from "../utils/constants";
 import { normalizeWindowsPath } from "../utils/pathUtils";
 import type { StreamingContext } from "../hooks/streaming/useMessageProcessor";
 
-export function ChatPage() {
+export interface ChatPageProps {
+  workingDirectory?: string;
+  sessionId?: string;
+}
+
+export function ChatPage({ workingDirectory: propWorkingDirectory, sessionId: propSessionId }: ChatPageProps = {}) {
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [projects, setProjects] = useState<ProjectInfo[]>([]);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-  // Extract and normalize working directory from URL
-  const workingDirectory = (() => {
+  // Extract and normalize working directory from URL or use prop
+  const workingDirectory = propWorkingDirectory || (() => {
     const rawPath = location.pathname.replace("/projects", "");
     if (!rawPath) return undefined;
 
@@ -43,9 +48,9 @@ export function ChatPage() {
     return normalizeWindowsPath(decodedPath);
   })();
 
-  // Get current view and sessionId from query parameters
+  // Get current view and sessionId from query parameters or use prop
   const currentView = searchParams.get("view");
-  const sessionId = searchParams.get("sessionId");
+  const sessionId = propSessionId || searchParams.get("sessionId");
   const isHistoryView = currentView === "history";
   const isLoadedConversation = !!sessionId && !isHistoryView;
 

@@ -19,7 +19,8 @@ export function LovableApp() {
       }
       
       const projectsData = await response.json();
-      setProjects(projectsData);
+      // API returns {projects: [...]} structure
+      setProjects(projectsData.projects || []);
     } catch (err) {
       console.error("Failed to fetch projects:", err);
       setError(err instanceof Error ? err.message : "Failed to load projects");

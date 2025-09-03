@@ -211,7 +211,7 @@ export function GitHubRepoManager({ projects, onRefresh }: GitHubRepoManagerProp
 
       {/* Project-Repository Sync */}
       <div className="grid gap-4">
-        {projects.map((project) => {
+        {Array.isArray(projects) && projects.map((project) => {
           const linkedRepo = getProjectRepo(project.path);
           const isSyncing = syncingProjects.has(project.path);
           
@@ -315,7 +315,7 @@ export function GitHubRepoManager({ projects, onRefresh }: GitHubRepoManagerProp
         })}
       </div>
 
-      {projects.length === 0 && (
+      {(!Array.isArray(projects) || projects.length === 0) && (
         <div className="text-center py-8">
           <FolderIcon className="w-16 h-16 text-white/40 mx-auto mb-4" />
           <p className="text-white/60">No projects found</p>
