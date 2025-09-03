@@ -12,10 +12,13 @@ import {
   CodeBracketSquareIcon,
 } from "@heroicons/react/24/outline";
 import { ConversationalEntry } from "./ConversationalEntry";
-import { ProjectDashboard } from "./ProjectDashboard";
+import { GitHubRepositoryBrowser } from "./GitHubRepositoryBrowser";
 import { DevStudioLayout } from "./DevStudioLayout";
 import { GitHubRepoManager } from "./GitHubRepoManager";
+import { useGitHub } from "../contexts/GitHubContext";
+import type { GitHubRepo } from "../contexts/GitHubContext";
 import type { ProjectInfo } from "../types";
+import { cloneAndInitializeRepository, initializeClaudeEnvironment } from "../utils/workspaceApi";
 
 interface NavigationItem {
   id: string;
@@ -35,11 +38,13 @@ type ViewMode = "home" | "dashboard" | "project" | "github";
 export function LovableLayout({ projects, onProjectsRefresh }: LovableLayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { accessToken, isAuthenticated } = useGitHub();
   const [viewMode, setViewMode] = useState<ViewMode>("home");
   const [currentProject, setCurrentProject] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [, setIsInitializingWorkspace] = useState(false);
 
   // Determine current view from URL
   useEffect(() => {
@@ -80,18 +85,6 @@ export function LovableLayout({ projects, onProjectsRefresh }: LovableLayoutProp
     onProjectsRefresh();
   }, [navigate, onProjectsRefresh]);
 
-  const handleProjectSelect = useCallback((projectPath: string) => {
-    setCurrentProject(projectPath);
-    setViewMode("project");
-    
-    // Generate a new session ID for the project
-    const newSessionId = btoa(projectPath).replace(/[^a-zA-Z0-9]/g, '').slice(0, 16);
-    setSessionId(newSessionId);
-    
-    // Navigate to project URL
-    const encodedPath = encodeURIComponent(projectPath);
-    navigate(`/projects${encodedPath}?sessionId=${newSessionId}`);
-  }, [navigate]);
 
   const handleGoHome = useCallback(() => {
     setViewMode("home");
@@ -132,6 +125,50 @@ export function LovableLayout({ projects, onProjectsRefresh }: LovableLayoutProp
     setSessionId(null);
     navigate("/github");
   }, [navigate]);
+
+  const handleRepositorySelect = useCallback(async (repo: GitHubRepo) => {
+    if (!accessToken || !isAuthenticated) {
+      console.error('Not authenticated with GitHub');
+      return;
+    }
+
+    try {
+      setIsInitializingWorkspace(true);
+      
+      // Clone and initialize workspace
+      const cloneResponse = await cloneAndInitializeRepository({
+        repositoryUrl: repo.clone_url,
+        repositoryName: repo.name,
+        branch: repo.default_branch,
+        accessToken: accessToken
+      });
+
+      if (!cloneResponse.success) {
+        throw new Error(cloneResponse.error || 'Failed to clone repository');
+      }
+
+      // Initialize Claude environment
+      const claudeResponse = await initializeClaudeEnvironment(cloneResponse.workspace.id);
+
+      if (!claudeResponse.success) {
+        throw new Error(claudeResponse.error || 'Failed to initialize Claude environment');
+      }
+
+      // Navigate to the development environment
+      setCurrentProject(cloneResponse.workspace.localPath);
+      setSessionId(claudeResponse.claudeSessionId);
+      setViewMode("project");
+      
+      const encodedPath = encodeURIComponent(cloneResponse.workspace.localPath);
+      navigate(`/projects${encodedPath}?sessionId=${claudeResponse.claudeSessionId}`);
+
+    } catch (error) {
+      console.error('Failed to initialize repository:', error);
+      // TODO: Show error toast/notification
+    } finally {
+      setIsInitializingWorkspace(false);
+    }
+  }, [accessToken, isAuthenticated, navigate]);
 
   const navigationItems: NavigationItem[] = [
     {
@@ -297,12 +334,29 @@ export function LovableLayout({ projects, onProjectsRefresh }: LovableLayoutProp
         )}
 
         {viewMode === "dashboard" && (
-          <div className="h-full overflow-auto">
-            <ProjectDashboard
-              projects={projects}
-              onProjectSelect={handleProjectSelect}
-              onProjectCreate={handleGoHome}
-            />
+          <div className="h-full overflow-auto bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 p-8">
+            {isAuthenticated ? (
+              <GitHubRepositoryBrowser
+                onRepositorySelect={handleRepositorySelect}
+                className="max-w-6xl mx-auto"
+              />
+            ) : (
+              <div className="max-w-md mx-auto mt-20">
+                <div className="text-center py-20">
+                  <CodeBracketSquareIcon className="w-16 h-16 text-white/40 mx-auto mb-4" />
+                  <h3 className="text-white text-xl font-bold mb-4">Connect to GitHub</h3>
+                  <p className="text-white/70 mb-6">
+                    Connect your GitHub account to browse and develop your repositories
+                  </p>
+                  <button
+                    onClick={handleGoToGitHub}
+                    className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl hover:shadow-xl transition-all duration-300 hover:scale-105"
+                  >
+                    Go to GitHub Settings
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

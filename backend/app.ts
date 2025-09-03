@@ -21,6 +21,13 @@ import { handleAbortRequest } from "./handlers/abort.ts";
 import { syncProjectWithGitHub, autoCommitAndPush, getGitStatus } from "./handlers/github.ts";
 import { handleWebSocketUpgrade, initializeWebSocketService } from "./handlers/websocket.ts";
 import { 
+  cloneAndInitialize, 
+  getWorkspaces, 
+  initializeClaudeEnvironment, 
+  deleteWorkspace, 
+  getWorkspaceStatus 
+} from "./handlers/workspaces.ts";
+import { 
   handleSupabaseTablesRequest,
   handleSupabaseQueryRequest,
   handleSupabaseSchemaRequest,
@@ -94,6 +101,13 @@ export function createApp(
   app.post("/api/supabase/query", (c) => handleSupabaseQueryRequest(c));
   app.post("/api/supabase/schema", (c) => handleSupabaseSchemaRequest(c));
   app.post("/api/supabase/status", (c) => handleSupabaseStatusRequest(c));
+
+  // Workspace management endpoints
+  app.post("/api/workspaces/clone-and-initialize", (c) => cloneAndInitialize(c));
+  app.get("/api/workspaces", (c) => getWorkspaces(c));
+  app.post("/api/workspaces/:workspaceId/initialize-claude", (c) => initializeClaudeEnvironment(c));
+  app.get("/api/workspaces/:workspaceId/status", (c) => getWorkspaceStatus(c));
+  app.delete("/api/workspaces/:workspaceId", (c) => deleteWorkspace(c));
 
   // WebSocket endpoint handled in NodeRuntime at /ws path
 

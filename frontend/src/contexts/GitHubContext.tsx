@@ -19,6 +19,9 @@ export interface GitHubRepo {
   html_url: string;
   updated_at: string;
   default_branch: string;
+  language?: string;
+  stargazers_count?: number;
+  watchers_count?: number;
 }
 
 export interface GitHubContextType {
