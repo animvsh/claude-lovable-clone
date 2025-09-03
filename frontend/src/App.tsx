@@ -6,6 +6,7 @@ import { DevStudioLayout } from "./components/DevStudioLayout";
 import { LovableApp } from "./components/LovableApp";
 import { SettingsProvider } from "./contexts/SettingsContext";
 import { SupabaseProvider } from "./contexts/SupabaseContext";
+import { GitHubProvider } from "./contexts/GitHubContext";
 import { isDevelopment } from "./utils/environment";
 import { normalizeWindowsPath } from "./utils/pathUtils";
 
@@ -49,12 +50,14 @@ function App() {
   return (
     <SettingsProvider>
       <SupabaseProvider>
-        <Router>
+        <GitHubProvider>
+          <Router>
           <Routes>
             {/* New Lovable-inspired interface */}
             <Route path="/" element={<LovableApp />} />
             <Route path="/projects" element={<LovableApp />} />
             <Route path="/projects/*" element={<LovableApp />} />
+            <Route path="/github" element={<LovableApp />} />
             
             {/* Legacy routes for backward compatibility */}
             <Route path="/legacy" element={<ProjectSelector />} />
@@ -72,7 +75,8 @@ function App() {
               />
             )}
           </Routes>
-        </Router>
+          </Router>
+        </GitHubProvider>
       </SupabaseProvider>
     </SettingsProvider>
   );

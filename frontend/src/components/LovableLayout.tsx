@@ -9,10 +9,13 @@ import {
   QuestionMarkCircleIcon,
   MoonIcon,
   SunIcon,
+  CodeBracketSquareIcon,
 } from "@heroicons/react/24/outline";
 import { ConversationalEntry } from "./ConversationalEntry";
 import { ProjectDashboard } from "./ProjectDashboard";
 import { DevStudioLayout } from "./DevStudioLayout";
+import { GitHubAuth } from "./GitHubAuth";
+import { GitHubRepoManager } from "./GitHubRepoManager";
 import type { ProjectInfo } from "../types";
 
 interface NavigationItem {
@@ -28,7 +31,7 @@ export interface LovableLayoutProps {
   onProjectsRefresh: () => void;
 }
 
-type ViewMode = "home" | "dashboard" | "project";
+type ViewMode = "home" | "dashboard" | "project" | "github";
 
 export function LovableLayout({ projects, onProjectsRefresh }: LovableLayoutProps) {
   const navigate = useNavigate();
@@ -45,6 +48,9 @@ export function LovableLayout({ projects, onProjectsRefresh }: LovableLayoutProp
     
     if (path === "/" || path === "/home") {
       setViewMode("home");
+      setCurrentProject(null);
+    } else if (path === "/github") {
+      setViewMode("github");
       setCurrentProject(null);
     } else if (path === "/projects" || path.startsWith("/projects?")) {
       setViewMode("dashboard");
@@ -121,6 +127,13 @@ export function LovableLayout({ projects, onProjectsRefresh }: LovableLayoutProp
     document.documentElement.classList.toggle('dark', shouldBeDark);
   }, []);
 
+  const handleGoToGitHub = useCallback(() => {
+    setViewMode("github");
+    setCurrentProject(null);
+    setSessionId(null);
+    navigate("/github");
+  }, [navigate]);
+
   const navigationItems: NavigationItem[] = [
     {
       id: "home",
@@ -143,6 +156,12 @@ export function LovableLayout({ projects, onProjectsRefresh }: LovableLayoutProp
           handleGoHome();
         }
       },
+    },
+    {
+      id: "github",
+      label: "GitHub",
+      icon: CodeBracketSquareIcon,
+      onClick: handleGoToGitHub,
     },
   ];
 
@@ -224,7 +243,8 @@ export function LovableLayout({ projects, onProjectsRefresh }: LovableLayoutProp
             const isActive = (
               (item.id === "home" && viewMode === "home") ||
               (item.id === "projects" && viewMode === "dashboard") ||
-              (item.id === "create" && viewMode === "home")
+              (item.id === "create" && viewMode === "home") ||
+              (item.id === "github" && viewMode === "github")
             );
 
             return (
@@ -284,6 +304,12 @@ export function LovableLayout({ projects, onProjectsRefresh }: LovableLayoutProp
               onProjectSelect={handleProjectSelect}
               onProjectCreate={handleGoHome}
             />
+          </div>
+        )}
+
+        {viewMode === "github" && (
+          <div className="h-full overflow-auto">
+            <GitHubRepoManager projects={projects} />
           </div>
         )}
       </div>

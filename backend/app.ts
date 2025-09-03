@@ -18,6 +18,7 @@ import { handleHistoriesRequest } from "./handlers/histories.ts";
 import { handleConversationRequest } from "./handlers/conversations.ts";
 import { handleChatRequest } from "./handlers/chat.ts";
 import { handleAbortRequest } from "./handlers/abort.ts";
+import { syncProjectWithGitHub, autoCommitAndPush, getGitStatus } from "./handlers/github.ts";
 import { handleWebSocketUpgrade, initializeWebSocketService } from "./handlers/websocket.ts";
 import { 
   handleSupabaseTablesRequest,
@@ -82,6 +83,11 @@ export function createApp(
   );
 
   app.post("/api/chat", (c) => handleChatRequest(c, requestAbortControllers));
+
+  // GitHub integration endpoints
+  app.post("/api/github/sync", (c) => syncProjectWithGitHub(c));
+  app.post("/api/github/auto-commit", (c) => autoCommitAndPush(c));
+  app.get("/api/github/status", (c) => getGitStatus(c));
 
   // Supabase MCP integration endpoints
   app.post("/api/supabase/tables", (c) => handleSupabaseTablesRequest(c));
