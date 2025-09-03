@@ -10,7 +10,6 @@ import {
   ExclamationCircleIcon,
   EyeIcon,
   EyeSlashIcon,
-  GitBranchIcon,
   ClockIcon,
 } from '@heroicons/react/24/outline';
 
@@ -90,7 +89,7 @@ export function GitHubRepoManager({ projects, onRefresh }: GitHubRepoManagerProp
     return (
       <div className="text-center py-8">
         <div className="text-white/60 mb-4">
-          <GitBranchIcon className="w-16 h-16 mx-auto" />
+          <LinkIcon className="w-16 h-16 mx-auto" />
         </div>
         <h3 className="text-white text-lg font-semibold mb-2">Connect to GitHub</h3>
         <p className="text-white/70 text-sm">
@@ -244,7 +243,7 @@ export function GitHubRepoManager({ projects, onRefresh }: GitHubRepoManagerProp
                 <div className="bg-white/5 border border-white/10 rounded-xl p-4">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <GitBranchIcon className="w-4 h-4 text-white/70" />
+                      <LinkIcon className="w-4 h-4 text-white/70" />
                       <span className="text-white font-medium">{linkedRepo.full_name}</span>
                       {linkedRepo.private && <EyeSlashIcon className="w-4 h-4 text-white/50" />}
                     </div>

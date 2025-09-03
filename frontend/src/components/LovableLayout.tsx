@@ -14,7 +14,6 @@ import {
 import { ConversationalEntry } from "./ConversationalEntry";
 import { ProjectDashboard } from "./ProjectDashboard";
 import { DevStudioLayout } from "./DevStudioLayout";
-import { GitHubAuth } from "./GitHubAuth";
 import { GitHubRepoManager } from "./GitHubRepoManager";
 import type { ProjectInfo } from "../types";
 
